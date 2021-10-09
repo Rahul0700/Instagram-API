@@ -18,5 +18,6 @@ func main() {
 	http.HandleFunc("/users/", userRequestHandler)
 	http.HandleFunc("/posts", postsRequestHandler)
 	http.HandleFunc("/posts/", postsRequestHandler)
+	http.HandleFunc("/posts/users/", userPostsRequest)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

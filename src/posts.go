@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Posts struct {
@@ -76,6 +77,50 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Response
 		postsJson, err := json.Marshal(result)
+		if err != nil {
+			panic(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(postsJson)
+
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"Status":"failure", "Message": "400 Bad Request"}`))
+	}
+}
+
+func userPostsRequest(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	// GET req to get post details using id
+	case "GET":
+		// Parse userid from url
+		id := r.URL.Path[13:]
+
+		//Find doocument using id filter
+		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+		if err != nil {
+			panic(err)
+			fmt.Print(cancel)
+		}
+		findOptions := options.Find()
+		//Set the limit of the number of record to find
+		var results []Posts
+		findOptions.SetLimit(5)
+		collection := client.Database("Instagram-API").Collection("Posts")
+		cur, err := collection.Find(ctx, bson.M{"userid": id})
+		for cur.Next(ctx) {
+			//Create a value into which the single document can be decoded
+
+			var elem Posts
+			err := cur.Decode(&elem)
+			if err != nil {
+				panic(err)
+			}
+			results = append(results, elem)
+		}
+		//Response
+		postsJson, err := json.Marshal(results)
 		if err != nil {
 			panic(err)
 		}
