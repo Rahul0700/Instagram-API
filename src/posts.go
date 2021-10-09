@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -91,33 +93,38 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func userPostsRequest(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	// GET req to get post details using id
-	case "GET":
+
+	if r.Method == "GET" {
 		// Parse userid from url
 		id := r.URL.Path[13:]
+		query := r.URL.RawQuery
+		arr := strings.Split(query, "&")
+		rawlimit := strings.Split(arr[0], "=")[1]
+		rawoffset := strings.Split(arr[1], "=")[1]
+		limit, err := strconv.ParseInt(rawlimit, 6, 12)
+		offset, err := strconv.ParseInt(rawoffset, 6, 12)
+		skip := limit * offset
+		//Find doocuments using id filter
 
-		//Find doocument using id filter
 		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 		if err != nil {
 			panic(err)
 			fmt.Print(cancel)
 		}
-		findOptions := options.Find()
+		options := options.Find()
 		//Set the limit of the number of record to find
 		var results []Posts
-		findOptions.SetLimit(5)
+		options.SetLimit(limit)
+		options.SetSkip(skip)
 		collection := client.Database("Instagram-API").Collection("Posts")
-		cur, err := collection.Find(ctx, bson.M{"userid": id})
+		cur, err := collection.Find(ctx, bson.M{"userid": id}, options)
 		for cur.Next(ctx) {
-			//Create a value into which the single document can be decoded
-
-			var elem Posts
-			err := cur.Decode(&elem)
+			var doc Posts
+			err := cur.Decode(&doc)
 			if err != nil {
 				panic(err)
 			}
-			results = append(results, elem)
+			results = append(results, doc)
 		}
 		//Response
 		postsJson, err := json.Marshal(results)
@@ -128,7 +135,7 @@ func userPostsRequest(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(postsJson)
 
-	default:
+	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"Status":"failure", "Message": "400 Bad Request"}`))
 	}
