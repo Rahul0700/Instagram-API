@@ -1,50 +1,39 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type User struct {
-	Username string
-	Password string
-	Email    string
+type Posts struct {
+	Userid    string
+	Caption   string
+	Imageurl  string
+	Timestamp time.Time
 }
 
-type UserPostResponse struct {
+type PostsPostResponse struct {
 	Status string
 	Id     interface{}
 }
 
-func getMD5Hash(text string) string {
-	/*
-		:param text: <string> Pasasword to be encrypted
-		:return hex: <string> Encrypted hash of the password
-	*/
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
-}
-
-func userRequestHandler(w http.ResponseWriter, r *http.Request) {
+func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	// POST req to handle user registration
+	// POST req to handle Post creation
 	case "POST":
 		// Decode Json request body to struct layout
-		user := User{}
-		err := json.NewDecoder(r.Body).Decode(&user)
+		posts := Posts{}
+		err := json.NewDecoder(r.Body).Decode(&posts)
 		if err != nil {
 			panic(err)
 		}
 
-		// Password Encryption using MD5 Algo
-		rawpassword := user.Password
-		user.Password = getMD5Hash(rawpassword)
-		userBson, err := bson.Marshal(user)
+		posts.Timestamp = time.Now()
+		postsBson, err := bson.Marshal(posts)
 		if err != nil {
 			panic(err)
 		}
@@ -55,24 +44,24 @@ func userRequestHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 			fmt.Print(cancel)
 		}
-		createuser, err := insertDocument(client, ctx, "Instagram-API", "Users", userBson)
+		createposts, err := insertDocument(client, ctx, "Instagram-API", "Posts", postsBson)
 		if err != nil {
 			panic(err)
 		}
 
 		//Response
-		userresponse := UserPostResponse{}
-		userresponse.Id = createuser.InsertedID
-		userresponse.Status = "success"
-		userJson, err := json.Marshal(userresponse)
+		postsresponse := PostsPostResponse{}
+		postsresponse.Id = createposts.InsertedID
+		postsresponse.Status = "success"
+		postsJson, err := json.Marshal(postsresponse)
 		if err != nil {
 			panic(err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		w.Write(userJson)
+		w.Write(postsJson)
 
-	// GET req to get user details using id
+	// GET req to get post details using id
 	case "GET":
 		// Parse userid from url
 		id := r.URL.Path[7:]
@@ -83,16 +72,16 @@ func userRequestHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 			fmt.Print(cancel)
 		}
-		result, err := getDocument(client, ctx, "Instagram-API", "Users", id)
+		result, err := getDocument(client, ctx, "Instagram-API", "Posts", id)
 
 		// Response
-		userJson, err := json.Marshal(result)
+		postsJson, err := json.Marshal(result)
 		if err != nil {
 			panic(err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(userJson)
+		w.Write(postsJson)
 
 	default:
 		w.WriteHeader(http.StatusBadRequest)

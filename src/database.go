@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -48,5 +50,25 @@ func insertDocument(client *mongo.Client, ctx context.Context, dataBase, col str
 	*/
 	collection := client.Database(dataBase).Collection(col)
 	result, err := collection.InsertOne(ctx, doc)
+	return result, err
+}
+
+func getDocument(client *mongo.Client, ctx context.Context, dataBase, col string, id string) (primitive.M, error) {
+	/*
+		:param client: <mongo.Client> To identify the high-level location of the ducument
+		:param ctx: <context.Context> Allows to set deadline for the Find process
+		:param dataBase: <string> Name of the database where the document should be searched at
+		:param col: <string> Collection name where the document is supposed to be searched at
+		:param id: <string> The id of the document the user is looking for
+		:return result: <primitive.M> The retrieved document instance
+		:return err: <error> Returns nil if connection successful
+	*/
+	var result bson.M
+	docID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		panic(err)
+	}
+	collection := client.Database(dataBase).Collection(col)
+	err = collection.FindOne(ctx, bson.M{"_id": docID}).Decode(&result)
 	return result, err
 }
