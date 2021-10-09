@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,31 +39,37 @@ func connect(uri string) (*mongo.Client, context.Context, context.CancelFunc, er
 	return client, ctx, cancel, err
 }
 
-func insertDocument(client *mongo.Client, ctx context.Context, dataBase, col string, doc interface{}) (*mongo.InsertOneResult, error) {
+func insertDocument(dataBase, col string, doc interface{}) (*mongo.InsertOneResult, error) {
 	/*
-		:param client: <mongo.Client> To create or update the db & collection during document insertion
-		:param ctx: <context.Context> Allows to set deadline for the Insertion process
 		:param dataBase: <string> Name of the database where the document should be inserted
 		:param col: <string> Collection name where the document is supposed to be installed
 		:param doc: <interface{}> Holds the document to be inserted
 		:return result: <*mongo.InsertOneResult> Contains the particular instance of the created document
 		:return err: <error> Returns nil if connection successful
 	*/
+	client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	if err != nil {
+		panic(err)
+		fmt.Print(cancel)
+	}
 	collection := client.Database(dataBase).Collection(col)
 	result, err := collection.InsertOne(ctx, doc)
 	return result, err
 }
 
-func getDocument(client *mongo.Client, ctx context.Context, dataBase, col string, id string) (primitive.M, error) {
+func getDocument(dataBase, col string, id string) (primitive.M, error) {
 	/*
-		:param client: <mongo.Client> To identify the high-level location of the ducument
-		:param ctx: <context.Context> Allows to set deadline for the Find process
 		:param dataBase: <string> Name of the database where the document should be searched at
 		:param col: <string> Collection name where the document is supposed to be searched at
 		:param id: <string> The id of the document the user is looking for
 		:return result: <primitive.M> The retrieved document instance
 		:return err: <error> Returns nil if connection successful
 	*/
+	client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+	if err != nil {
+		panic(err)
+		fmt.Print(cancel)
+	}
 	var result bson.M
 	docID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

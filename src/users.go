@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,6 +30,9 @@ func getMD5Hash(text string) string {
 }
 
 func userRequestHandler(w http.ResponseWriter, r *http.Request) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	switch r.Method {
 	// POST req to handle user registration
 	case "POST":
@@ -50,12 +52,7 @@ func userRequestHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Insert Document
-		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-		if err != nil {
-			panic(err)
-			fmt.Print(cancel)
-		}
-		createuser, err := insertDocument(client, ctx, "Instagram-API", "Users", userBson)
+		createuser, err := insertDocument("Instagram-API", "Users", userBson)
 		if err != nil {
 			panic(err)
 		}
@@ -78,12 +75,7 @@ func userRequestHandler(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Path[7:]
 
 		//Find doocument using id filter
-		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-		if err != nil {
-			panic(err)
-			fmt.Print(cancel)
-		}
-		result, err := getDocument(client, ctx, "Instagram-API", "Users", id)
+		result, err := getDocument("Instagram-API", "Users", id)
 
 		// Response
 		userJson, err := json.Marshal(result)

@@ -25,6 +25,9 @@ type PostsPostResponse struct {
 }
 
 func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	switch r.Method {
 	// POST req to handle Post creation
 	case "POST":
@@ -34,7 +37,6 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-
 		posts.Timestamp = time.Now()
 		postsBson, err := bson.Marshal(posts)
 		if err != nil {
@@ -42,12 +44,7 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Insert Document
-		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-		if err != nil {
-			panic(err)
-			fmt.Print(cancel)
-		}
-		createposts, err := insertDocument(client, ctx, "Instagram-API", "Posts", postsBson)
+		createposts, err := insertDocument("Instagram-API", "Posts", postsBson)
 		if err != nil {
 			panic(err)
 		}
@@ -70,12 +67,7 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Path[7:]
 
 		//Find doocument using id filter
-		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-		if err != nil {
-			panic(err)
-			fmt.Print(cancel)
-		}
-		result, err := getDocument(client, ctx, "Instagram-API", "Posts", id)
+		result, err := getDocument("Instagram-API", "Posts", id)
 
 		// Response
 		postsJson, err := json.Marshal(result)
@@ -93,10 +85,14 @@ func postsRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func userPostsRequest(w http.ResponseWriter, r *http.Request) {
+	lock.Lock()
+	defer lock.Unlock()
 
 	if r.Method == "GET" {
 		// Parse userid from url
 		id := r.URL.Path[13:]
+
+		// Pagination
 		query := r.URL.RawQuery
 		arr := strings.Split(query, "&")
 		rawlimit := strings.Split(arr[0], "=")[1]
@@ -104,15 +100,14 @@ func userPostsRequest(w http.ResponseWriter, r *http.Request) {
 		limit, err := strconv.ParseInt(rawlimit, 6, 12)
 		offset, err := strconv.ParseInt(rawoffset, 6, 12)
 		skip := limit * offset
-		//Find doocuments using id filter
 
+		//Find doocuments using id filter along with pagelimit and offset
 		client, ctx, cancel, err := connect("mongodb+srv://rahul:QrpiHbW1srNcm9I5@cluster0.aumtt.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 		if err != nil {
 			panic(err)
 			fmt.Print(cancel)
 		}
 		options := options.Find()
-		//Set the limit of the number of record to find
 		var results []Posts
 		options.SetLimit(limit)
 		options.SetSkip(skip)
@@ -126,6 +121,7 @@ func userPostsRequest(w http.ResponseWriter, r *http.Request) {
 			}
 			results = append(results, doc)
 		}
+
 		//Response
 		postsJson, err := json.Marshal(results)
 		if err != nil {
