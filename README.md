@@ -2,6 +2,8 @@
 
 Instagram back-end API constructed using Go lang and MongoDB - Task at APPOINTY INTERNSHIP PROGRAM
 
+[Workflow doc](https://drive.google.com/file/d/1IOoEYcgiOo8ws6nrVd6kxVMIOSXm9L2J/view?usp=sharing) contains screesnshots of all the working endpoints and the proof of work.
+
 ###### To develop locally
 
 ```
@@ -25,7 +27,3 @@ src.exe
 ```
 ./src
 ```
-
-------
-
-[Workflow doc](https://drive.google.com/file/d/1IOoEYcgiOo8ws6nrVd6kxVMIOSXm9L2J/view?usp=sharing) contains screesnshots of all the working endpoints and the proof of work.
